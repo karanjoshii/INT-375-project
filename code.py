@@ -6,7 +6,7 @@ import seaborn as sns
 file_path = "C:/Users/karan/Downloads/A-1_NO_OF_VILLAGES_TOWNS_HOUSEHOLDS_POPULATION_AND_AREA.xlsx"
 df = pd.read_excel(file_path)
 
-# Display available columns
+# Display available column
 print("Columns in dataset:", df.columns.tolist())
 
 # Identifying the correct header row and relevant columns
