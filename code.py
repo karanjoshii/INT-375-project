@@ -168,44 +168,49 @@ plt.tight_layout()
 plt.show()
 
 
-# --- Summary Visualizations --- #
+# --- Additional Visualizations --- #
 
-# 1. Bar Plot: Top 5 States by Population Density
+# Create top_density_states before printing
 top_density_states = df[['Region_Name', 'Population_per_sq_km']].sort_values(by='Population_per_sq_km', ascending=False).head(5)
+
+# 1. Bar Plot: Bottom 5 States by Population Density
+bottom_density_states = df[['Region_Name', 'Population_per_sq_km']].sort_values(by='Population_per_sq_km', ascending=True).head(5)
 plt.figure(figsize=(10,6))
-sns.barplot(data=top_density_states, x='Region_Name', y='Population_per_sq_km', palette='viridis')
-plt.title('Top 5 States by Population Density')
+sns.barplot(data=bottom_density_states, x='Region_Name', y='Population_per_sq_km', hue='Region_Name', palette='coolwarm', legend=False)
+plt.title('Bottom 5 States by Population Density')
 plt.xlabel('State')
 plt.ylabel('Population per sq.km')
 plt.tight_layout()
 plt.show()
 
-# 2. Bar Plot: Top 5 States by Urbanization Level
-top_urban_states = df[['Region_Name', 'Urbanization_Level']].sort_values(by='Urbanization_Level', ascending=False).head(5)
-plt.figure(figsize=(10,6))
-sns.barplot(data=top_urban_states, x='Region_Name', y='Urbanization_Level', palette='coolwarm')
-plt.title('Top 5 States by Urbanization Level')
-plt.xlabel('State')
-plt.ylabel('Urbanization Level')
-plt.tight_layout()
-plt.show()
-
-# 3. Bar Plot: Top 5 States by Household Size
-top_household_size_states = df[['Region_Name', 'Household_Size']].sort_values(by='Household_Size', ascending=False).head(5)
-plt.figure(figsize=(10,6))
-sns.barplot(data=top_household_size_states, x='Region_Name', y='Household_Size', palette='Blues_d')
-plt.title('Top 5 States by Household Size')
-plt.xlabel('State')
+# 2. Box Plot: Household Size by Region Type
+plt.figure(figsize=(12,6))
+sns.boxplot(data=df, x='Area_Type', y='Household_Size', hue='Area_Type', palette='Set2', legend=False)
+plt.title('Box Plot of Household Size by Area Type')
+plt.xlabel('Area Type')
 plt.ylabel('Household Size')
 plt.tight_layout()
 plt.show()
 
-# --- Summary Data --- #
+# 3. Violin Plot: Distribution of Population Density
+plt.figure(figsize=(12,6))
+sns.violinplot(data=df, x='Area_Type', y='Population_per_sq_km', hue='Area_Type', palette='coolwarm', legend=False)
+plt.title('Violin Plot of Population Density by Area Type')
+plt.xlabel('Area Type')
+plt.ylabel('Population per sq.km')
+plt.tight_layout()
+plt.show()
+
+# 4. Box Plot of Total Population by Region (fixed)
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=df, x='Region_Name', y='Total_Population', hue='Region_Name', palette='coolwarm', legend=False)
+plt.xticks(rotation=90)
+plt.title('Box Plot of Total Population by Region with Outliers')
+plt.xlabel('Region Name')
+plt.ylabel('Total Population')
+plt.tight_layout()
+plt.show()
+
+# 5. Print Summary Tables
 print("Top 5 States by Population Density:")
 print(top_density_states)
-
-print("\nTop 5 States by Urbanization Level:")
-print(top_urban_states)
-
-print("\nTop 5 States by Household Size:")
-print(top_household_size_states)
