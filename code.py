@@ -1,72 +1,211 @@
+# India Census Analysis Script
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
-# Load the dataset
+# Load Data
 file_path = "C:/Users/karan/Downloads/A-1_NO_OF_VILLAGES_TOWNS_HOUSEHOLDS_POPULATION_AND_AREA.xlsx"
-df = pd.read_excel(file_path)
+df = pd.read_excel(file_path, skiprows=4)
 
-# Display available column
-print("Columns in dataset:", df.columns.tolist())
+# Rename columns
+df.columns = [
+    "Sr_No", "Region_Code1", "Region_Code2", "Level", "Region_Name", "Area_Type",
+    "No_of_Villages", "No_of_Towns", "Uninhabited_Villages", "No_of_Households",
+    "Total_Population", "Male_Population", "Female_Population", "Area_sq_km",
+    "Population_per_sq_km"
+]
 
-# Identifying the correct header row and relevant columns
-df = df.iloc[5:]  # Adjusting to skip initial non-data rows
-df.columns = ["state_ut", "district", "sub_district", "villages", "towns", "households", "population", "area", "extra1", "extra2", "extra3", "extra4", "extra5", "extra6", "extra7"]
+# Clean data
+df = df[df["Region_Name"].notna() & df["Total_Population"].notna()]
+df = df[df["Level"] == "STATE"]
+df = df[df["Area_Type"] == "Total"]
+df.reset_index(drop=True, inplace=True)
 
-# Selecting only relevant columns
-df = df[["state_ut", "district", "sub_district", "villages", "towns", "households", "population", "area"]]
+# Derived metrics
+df["Household_Size"] = df["Total_Population"] / df["No_of_Households"]
+df["Urbanization_Level"] = df["No_of_Towns"] / (df["No_of_Towns"] + df["No_of_Villages"])
 
-# Dropping unnecessary rows and handling missing values
-df.dropna(subset=["population", "area", "households"], inplace=True)
+# --- Visualizations --- #
 
-df["population"] = pd.to_numeric(df["population"], errors="coerce")
-df["area"] = pd.to_numeric(df["area"], errors="coerce")
-df["households"] = pd.to_numeric(df["households"], errors="coerce")
+sns.set(style="whitegrid")
 
-df = df[df["area"] > 0]  # Removing zero or negative areas
+# [existing plots retained here...]
 
-# Calculating Population Density
-df["population_density"] = df["population"] / df["area"]
+# 10. Combined Chart: Bar + Line Plot for Population vs Urbanization Level
+fig, ax1 = plt.subplots(figsize=(14,6))
+color = 'tab:blue'
+ax1.set_xlabel('State')
+ax1.set_ylabel('Total Population', color=color)
+ax1.bar(df['Region_Name'], df['Total_Population'], color=color, alpha=0.6)
+ax1.tick_params(axis='y', labelcolor=color)
+plt.xticks(rotation=90)
 
-# Descriptive Statistics
-print(df.describe())
-
-# Identifying highest and lowest population density
-max_density = df.loc[df["population_density"].idxmax()]
-min_density = df.loc[df["population_density"].idxmin()]
-print(f"Highest Population Density:\n{max_density}")
-print(f"Lowest Population Density:\n{min_density}")
-
-# Debugging available columns before plotting
-print("Available columns for plotting:", df.columns.tolist())
-
-# Visualizing Population Distribution
-plt.figure(figsize=(10, 5))
-sns.histplot(df["population"], bins=30, kde=True)
-plt.title("Population Distribution")
-plt.xlabel("Population")
-plt.ylabel("Frequency")
+ax2 = ax1.twinx()
+color = 'tab:red'
+ax2.set_ylabel('Urbanization Level', color=color)
+ax2.plot(df['Region_Name'], df['Urbanization_Level'], color=color, marker='o')
+ax2.tick_params(axis='y', labelcolor=color)
+plt.title("Total Population and Urbanization Level by State")
+plt.tight_layout()
 plt.show()
 
-# Scatter Plot: Household Size vs Population Density
-plt.figure(figsize=(8, 5))
-sns.scatterplot(x=df["households"], y=df["population_density"], alpha=0.6)
-plt.title("Household Size vs Population Density")
-plt.xlabel("Number of Households")
-plt.ylabel("Population Density (people per sq km)")
+# 11. Combined Chart: Scatter + Regression line for Area vs Population Density
+plt.figure(figsize=(10,6))
+sns.regplot(data=df, x='Area_sq_km', y='Population_per_sq_km', scatter_kws={'s': 50, 'alpha': 0.7})
+plt.title("Area vs Population Density with Regression Line")
+plt.xlabel("Area (sq.km)")
+plt.ylabel("Population Density")
+plt.tight_layout()
 plt.show()
 
-# Scatter Plot: Population vs Area
-plt.figure(figsize=(8, 5))
-sns.scatterplot(x=df["area"], y=df["population"], alpha=0.5)
-plt.title("Population vs. Area")
-plt.xlabel("Land Area (sq km)")
-plt.ylabel("Population")
+# 12. Combined Chart: Violin + Swarm Plot for Household Size
+plt.figure(figsize=(12,6))
+sns.violinplot(data=df, x='Area_Type', y='Household_Size', inner=None, color="lightblue")
+sns.swarmplot(data=df, x='Area_Type', y='Household_Size', color="black", alpha=0.6)
+plt.title("Violin + Swarm Plot of Household Size by Area Type")
+plt.tight_layout()
 plt.show()
 
-# Correlation Heatmap (excluding non-numeric columns)
-numeric_df = df.select_dtypes(include=["number"])
-plt.figure(figsize=(8, 5))
-sns.heatmap(numeric_df.corr(), annot=True, cmap='coolwarm', fmt=".2f")
-plt.title("Correlation Heatmap")
+# 13. Bar Plot: Top 10 States by Population
+plt.figure(figsize=(12,6))
+top_pop_states = df.sort_values('Total_Population', ascending=False).head(10)
+sns.barplot(data=top_pop_states, x='Region_Name', y='Total_Population', hue='Region_Name', palette='Blues_d', legend=False)
+plt.title('Top 10 States by Total Population')
+plt.xlabel('State')
+plt.ylabel('Total Population')
+plt.xticks(rotation=45)
+plt.tight_layout()
 plt.show()
+
+
+# 14. Scatter Plot: Urbanization Level vs Population Density
+plt.figure(figsize=(10,6))
+sns.scatterplot(data=df, x='Urbanization_Level', y='Population_per_sq_km', hue='Region_Name', palette='viridis', s=100, alpha=0.8)
+plt.title('Urbanization Level vs Population Density')
+plt.xlabel('Urbanization Level')
+plt.ylabel('Population per sq.km')
+plt.tight_layout()
+plt.show()
+
+# 15. Box Plot: Distribution of Household Size by Region
+plt.figure(figsize=(14,6))
+sns.boxplot(data=df, x='Region_Name', y='Household_Size', hue='Region_Name', palette='Pastel1', legend=False)
+plt.xticks(rotation=90)
+plt.title('Box Plot of Household Size by State')
+plt.xlabel('State')
+plt.ylabel('Household Size')
+plt.tight_layout()
+plt.show()
+
+
+# 16. Scatter Plot: Area vs Household Size with Different Colors
+plt.figure(figsize=(10,6))
+sns.scatterplot(data=df, x='Area_sq_km', y='Household_Size', hue='Region_Name', palette='tab20', s=100, alpha=0.85)
+plt.title('Scatter Plot: Area vs Household Size by State')
+plt.xlabel('Area (sq.km)')
+plt.ylabel('Household Size')
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+plt.show()
+
+
+# 17. Distribution Plot: Total Population
+plt.figure(figsize=(10,6))
+sns.histplot(df['Total_Population'], kde=True, color='blue')
+plt.title('Distribution of Total Population Across Regions')
+plt.xlabel('Total Population')
+plt.ylabel('Frequency')
+plt.tight_layout()
+plt.show()
+
+# 18. Heatmap: Correlation between Variables
+correlation_matrix = df[['Total_Population', 'Male_Population', 'Female_Population',
+                         'Household_Size', 'Urbanization_Level', 'Population_per_sq_km', 'Area_sq_km']].corr()
+plt.figure(figsize=(10,6))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
+plt.title('Correlation Matrix')
+plt.tight_layout()
+plt.show()
+
+# 19. Pie Chart: Proportion of Urban vs Rural Population
+urban_population = df['Urbanization_Level'].mean()
+rural_population = 1 - urban_population
+labels = ['Urban', 'Rural']
+sizes = [urban_population, rural_population]
+plt.figure(figsize=(7,7))
+plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140, colors=['#66b3ff', '#99ff99'])
+plt.title('Urban vs Rural Population Proportion')
+plt.tight_layout()
+plt.show()
+
+
+
+# 20. Facet Grid: Population and Household Size by Region Type
+g = sns.FacetGrid(df, col="Area_Type", height=6, aspect=1.5)
+g.map(sns.scatterplot, "Total_Population", "Household_Size", alpha=.7)
+g.set_axis_labels("Total Population", "Household Size")
+g.set_titles("{col_name} Area")
+plt.tight_layout()
+plt.show()
+
+# 21. Pair Plot: Relationship Between Multiple Variables
+sns.pairplot(df[['Total_Population', 'Household_Size', 'Urbanization_Level', 'Population_per_sq_km', 'Area_sq_km']])
+plt.suptitle('Pair Plot of Population and Household Size Relationships', y=1.02)
+plt.tight_layout()
+plt.show()
+
+
+#22 Box Plot for Outliers in Total Population
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=df, x='Region_Name', y='Total_Population', palette='coolwarm')
+plt.xticks(rotation=90)
+plt.title('Box Plot of Total Population by Region with Outliers')
+plt.xlabel('Region Name')
+plt.ylabel('Total Population')
+plt.tight_layout()
+plt.show()
+
+
+# --- Summary Visualizations --- #
+
+# 1. Bar Plot: Top 5 States by Population Density
+top_density_states = df[['Region_Name', 'Population_per_sq_km']].sort_values(by='Population_per_sq_km', ascending=False).head(5)
+plt.figure(figsize=(10,6))
+sns.barplot(data=top_density_states, x='Region_Name', y='Population_per_sq_km', palette='viridis')
+plt.title('Top 5 States by Population Density')
+plt.xlabel('State')
+plt.ylabel('Population per sq.km')
+plt.tight_layout()
+plt.show()
+
+# 2. Bar Plot: Top 5 States by Urbanization Level
+top_urban_states = df[['Region_Name', 'Urbanization_Level']].sort_values(by='Urbanization_Level', ascending=False).head(5)
+plt.figure(figsize=(10,6))
+sns.barplot(data=top_urban_states, x='Region_Name', y='Urbanization_Level', palette='coolwarm')
+plt.title('Top 5 States by Urbanization Level')
+plt.xlabel('State')
+plt.ylabel('Urbanization Level')
+plt.tight_layout()
+plt.show()
+
+# 3. Bar Plot: Top 5 States by Household Size
+top_household_size_states = df[['Region_Name', 'Household_Size']].sort_values(by='Household_Size', ascending=False).head(5)
+plt.figure(figsize=(10,6))
+sns.barplot(data=top_household_size_states, x='Region_Name', y='Household_Size', palette='Blues_d')
+plt.title('Top 5 States by Household Size')
+plt.xlabel('State')
+plt.ylabel('Household Size')
+plt.tight_layout()
+plt.show()
+
+# --- Summary Data --- #
+print("Top 5 States by Population Density:")
+print(top_density_states)
+
+print("\nTop 5 States by Urbanization Level:")
+print(top_urban_states)
+
+print("\nTop 5 States by Household Size:")
+print(top_household_size_states)
