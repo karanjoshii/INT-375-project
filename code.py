@@ -8,6 +8,8 @@ import numpy as np
 # Load Data
 file_path = "C:/Users/karan/Downloads/A-1_NO_OF_VILLAGES_TOWNS_HOUSEHOLDS_POPULATION_AND_AREA.xlsx"
 df = pd.read_excel(file_path, skiprows=4)
+print(df.info())
+print(df.describe())
 
 # Rename columns
 df.columns = [
